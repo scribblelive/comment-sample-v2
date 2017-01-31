@@ -1,0 +1,226 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+
+/* CSS Resets */
+#scrbbl-comments {
+    position: relative;
+    display: block;
+    font-size: 10px;
+    line-height: 1rem;
+    margin: 0px;
+    width: 320px;
+    margin: 0 auto;
+    border: 1px solid #919191;
+    border-radius: 10px;
+    padding: .7rem;
+}
+#scrbbl-comments *,
+#scrbbl-comments *:before,
+#scrbbl-comments *:after {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+/* Common Rules */
+#scrbbl-comments .btn {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    position: relative;
+}
+#scrbbl-comments .btn-primary {
+    color: #fff;
+    background-color: #337ab7;
+    border-color: #2e6da4;
+}
+#scrbbl-comments .btn-primary:hover,
+#scrbbl-comments .btn-primary:focus,
+#scrbbl-comments .btn-primary.focus,
+#scrbbl-comments .btn-primary:active,
+#scrbbl-comments .btn-primary.active {
+    color: #fff;
+    background-color: #286090;
+    border-color: #204d74;
+}
+#scrbbl-comments .btn-file {
+    overflow: hidden;
+}
+#scrbbl-comments .btn input[type="submit"],
+#scrbbl-comments .btn-file input[type="file"] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    cursor: inherit;
+    display: block;
+}
+
+/* Comment Sample Rules */
+#scrbbl-comments .scrbbl-title {
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+#scrbbl-comments .scrbbl-message
+{
+    font-size: 1.2rem;
+    text-align: center;
+    color: #919191;
+    padding-bottom: 1rem;
+}
+#scrbbl-comments .scrbbl-message:empty {
+    padding-bottom: 0;
+}
+
+#scrbbl-comments .scrbbl-message.error {
+    color: #f55;
+}
+#scrbbl-comments .scrbbl-message.success {
+    color: #5CB85C;
+}
+
+#scrbbl-comments #caption {
+    min-height: 8rem;
+    width: 100%;
+    border: 2px solid #ced1d5;
+}
+
+#scrbbl-comments .btn-file {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%;
+    border: 2px dashed #ced1d5;
+
+}
+#scrbbl-comments .btn-file .preview {
+    background: no-repeat center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto;
+}
+#scrbbl-comments .btn-file .remove {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top:0;
+    right:0;
+    left: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, .6);
+    z-index: 5;
+    color: #FFF;
+    opacity: 0;
+    -webkit-transition: opacity 1s ease-in-out;
+    -moz-transition: opacity 1s ease-in-out;
+    -ms-transition: opacity 1s ease-in-out;
+    -o-transition: opacity 1s ease-in-out;
+    transition: opacity 1s ease-in-out;
+    display: none;
+}
+#scrbbl-comments .btn-file .remove span {
+    border: 2px solid #FFF;
+    background-color: rgba(255,255,255, .4);
+    padding: .2rem;
+    border-radius: 100px;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    min-width: 30px;
+    min-height: 30px;
+}
+#scrbbl-comments .btn-file.selected .remove {
+    display: block;
+}
+#scrbbl-comments .btn-file.selected .remove:before {
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+    margin-right: -0.25em;  /* Adjusts for spacing */
+}
+#scrbbl-comments .btn-file.selected:hover .remove {
+    opacity: 1;
+}
+#scrbbl-comments .avatar {
+    width: 45px;
+    padding: 5px;
+    height: 45px;
+}
+#scrbbl-comments .avatar {
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAAAAAA7VNdtAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAUxJREFUSMft1FFrglAUwPH75Y+J5hAKtgex8CFGEPYQOISYUxrhy2gslEJyyBwySucn2BZbdqW65w56GOz//gOv59xLSu7IP/lDZB2PzYHpLXMsyX1DhM8EaZDgyMZqwE9agiIu7GWsESRq7xPwEMSmBPTY5KVDEzVkkkClCdwzyZNSIx6TPDb5iVwjd+cgvzjLvE4m5yCL2lwEn0leDe7plxZN9JRNfIkiQ8QmZ9SXyXPMFZtKJ3f/ECn6lVAi3HMRVaNxkC9MWJExjiSGsCNNL0eQmUb95NGKQYqFfVHbsfZtkB4lme+Y9Zu/3RnDdoND5HmkS3AsQe25G5q8x/0WnE68ctd7JLMVQNQNd2TZBVyK/01mLcAmP2zJ6hLw6dkXGXMIaEwKUqYaD4GbDSkDkYtcx6ScClyk7ZN8yCVAcchbh4/INklUPiJZH1gNnSrPsbyvAAAAAElFTkSuQmCC') no-repeat center;
+}
+#scrbbl-comments .media {
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAA3CAMAAACfBSJ0AAAACXBIWXMAABcRAAAXEQHKJvM/AAAATlBMVEX///+SkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKFNGhnAAAAGXRSTlMAEB8gMEBJUGBwd4CLkKCwwMzQ4PDy+Pv+naoaswAAAShJREFUSMft1mFvgyAQBuBj4ErLoExpO/7/H90QUIuH40zarMnuA37QJxp84QB4frFj75tr0DyxznlSOTmygydXgMzRnRcAany1Vo2lx9ecAYbABGESA/AMwqgpsy+D6CCOhOI7HTzKfZz2uPcv769vZMdu4caFUV1Kes9ozuREIXDDmTmKa1h3ZpnhFaw6cx/+EtacKVdNAStuyW4YxF1icTV/OgSiLjMxXqxAIObUtINEBxnabTdMG09+OsMWJ2F2GTZ8p4Sli1D/Mi/K2gPcO+BKyeb1V85Gq+t3OvvqTsxOU1za52t9peZiX8lJNlOj4pjrij5m1n2zw5wqdgA+55biYurEQHNOTucQ2+56xTa7Vf2/w99z/t+9qlPpvEiu80+G6+fLbxINX1FfkMipAAAAAElFTkSuQmCC')  no-repeat center;
+}
+#scrbbl-comments .btn-file.selected {
+    border-color: transparent;
+    background-image: none;
+}
+#scrbbl-comments .btn-file.selected .preview img,
+#scrbbl-comments .btn-file.selected .preview video {
+    max-width: 100%;
+    max-height: 100%;
+}
+#scrbbl-comments .post .container {
+    margin: .5rem 0;
+}
+#scrbbl-comments .submit {
+    text-align: right;
+}
+#scrbbl-comments .signout {
+    display: none;
+    font-size: 1.2rem;
+    text-decoration: none;
+    color: #ced1d5;
+    margin-left: 1rem;
+}
+#scrbbl-comments .user.signed-in .signout {
+    display: inline;
+}
+#scrbbl-comments .user.signed-in .remove,
+#scrbbl-comments .user.signed-in input[type="file"] {
+    display: none;
+
+}
+#scrbbl-comments .user.signed-in .btn {
+    cursor: default;
+}
+#scrbbl-comments .save.disabled {
+    background-color: #CCC;
+    border-color: #CCD;
+}
+#scrbbl-comments.uploading .media .remove {
+    display: none;
+}

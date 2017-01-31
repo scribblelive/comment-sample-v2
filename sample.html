@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<head>
+    <title>Comment Sample</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" type="text/css" href="comments.css">
+</head>
+<body>
+    <h1>Comment Sample</h1>
+    <form id="scrbbl-comments">
+            <h2 class="scrbbl-title">Submit a Comment</h2>
+
+            <div class="scrbbl-message"></div>
+            <div class="post">
+                <div class="user container">
+                    <span class="avatar btn btn-file">
+                        <div class="preview"></div>
+                        <input name="user_avatar" type="file" accept="image/*" />
+                        <div class="remove"><span title="Remove Image">X</span></div>
+                    </span>
+                    <input class="username" name="user_name" type="text" placeholder="Name">
+                    <a class="signout" href="#">Sign out</a>
+                </div>
+                <div class="content container">
+                    <span class="media btn btn-file">
+                        <div class="preview"></div>
+                        <input type="file" accept="image/*, video/*" />
+                        <div class="remove"><span title="Remove Media">Remove Media</span></div>
+                    </span>
+                    <textarea id="caption" placeholder="Please enter your comment/caption here."></textarea>
+                </div>
+                <div class="submit container">
+                    <span class="save btn btn-primary">Save Comment... <input type="submit" /></span>
+                </div>
+            </div>
+
+    </form>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script type="text/javascript" src="comments.js"></script>
+    <!-- start up comment engine -->
+    <script type="text/javascript">
+    (function(window, $, undefined) {
+        // Check for File Browser Support;
+        html5File = window.File && window.FileReader && window.FileList && window.Blob;
+        $(function()
+        {
+            var $root = $('#scrbbl-comments');
+            if( !html5File ) {
+                $root.find('*').remove();
+                $root.append('<i>HTML5 is not fully supported on your browser. You need to use a browser with these capabilities to submit a comment.</i>');
+                return;
+            }
+
+            var comment = new commentEngine({
+                token: 'YOURTOKEN',
+                threadId: 'YOURTHREADID'
+            });
+
+            $root.on('submit', function( e )
+            {
+                e.preventDefault();
+
+                var $submit_btn = $(this).find('.save');
+
+                //disable submit button
+                $submit_btn
+                    .toggleClass('disabled', true)
+                    .find(':input[type=submit]')
+                    .prop('disabled', true);
+
+                $root.toggleClass('uploading', true);
+
+                var fileList, avatar;
+                if( typeof (fileList = $root.find('.avatar input:file')[0].files) !== undefined && fileList.length === 1 ) {
+                    avatar = fileList[0];
+                }
+
+                comment.isOpen()
+                .then( function()
+                {
+                    return comment.anon_login( $root.find('.username').val(), avatar ).done( showSignout );
+                })
+                .then( function()
+                {
+                    var post = { content: '' },
+                        c, f;
+
+                    if( (c = $root.find('#caption').val() ) !== '' ) {
+                        post['content'] = c;
+                    }
+
+                    if( typeof (f = $root.find('.media input:file')[0].files) !== undefined && f.length === 1 ) {
+                        post['file'] = f[0];
+                    }
+
+                    return comment.post( post )
+                })
+                .progress( function( progress ) {
+                    $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', false).text( progress.message + ': ' + progress.value + ' %' );
+                })
+                .done( function( data ) {
+                    $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', true).text( data.message );
+                    clearContent();
+                })
+                .fail( function( jqXHR, textStatus, errorThrown ) {
+                    $root.find( '.scrbbl-message' ).toggleClass('error', true).toggleClass('success', false).text( errorThrown.toString() );
+
+                })
+                .always( function()
+                {
+                    // enable submit button again
+                    $submit_btn
+                        .toggleClass('disabled', false)
+                        .find(':input[type=submit]')
+                        .prop('disabled', false);
+
+                    $root.toggleClass('uploading', false);
+                });
+            });
+
+            var renderPreview = function()
+            {
+                    var $this = $(this),
+                        $parent = $this.parents('.btn-file'),
+                        preview = $parent.find('.preview');
+
+
+                    if( preview.length && typeof (f = $this.get(0).files) !== undefined && f.length === 1 ) {
+
+                        if( !!f[0].type.match(/image/) ) {
+                            imagePreview(preview, f[0]).done( function() { $parent.addClass('selected'); });
+                        }
+                        else if ( !!f[0].type.match(/video/) ) {
+                            videoPreview(preview, f[0]).done( function() { $parent.addClass('selected'); });
+                        }
+                    }
+                },
+                imagePreview = function( $container, file )
+                {
+                    var dfd = $.Deferred(),
+                        reader = new FileReader();
+                        reader.addEventListener('load',function() {
+                            $container.append( $('<img>').attr( 'src', reader.result ) );
+                            dfd.resolve();
+                        });
+                        reader.readAsDataURL(file);
+                    return dfd;
+                },
+                videoPreview = function( $container, file )
+                {
+                    var dfd = $.Deferred(),
+                        fileUrl = URL.createObjectURL(file),
+                        video = $("<video controls autoplay>");
+
+                    video.append( $('<source>').attr('src', fileUrl).attr('type', file.type) );
+                    video.appendTo( $container );
+
+                    dfd.resolve();
+                    return dfd;
+                },
+                removePreview = function()
+                {
+                    var $this = $(this);
+                        $parent = $this.parents('.btn-file');
+                        preview = $parent.find('.preview');
+                        file = $parent.find('input:file');
+
+                        preview.empty();
+                        file.val('');
+                        $parent.removeClass('selected');
+                },
+                clearContent = function()
+                {
+                    $root.find('.media.btn-file .remove').each( removePreview );
+                    $root.find('#caption').val('');
+                },
+                showSignout = function()
+                {
+                    $root.find('.user.container').toggleClass('signed-in', true);
+                },
+                clickSignOut = function( e )
+                {
+                    e.preventDefault();
+                    $root.find('.user.container').toggleClass('signed-in', false);
+                    $root.find('.avatar.btn-file .remove').each( removePreview );
+                    $root.find('.username').val('');
+                    comment.clear_auth();
+                }
+
+            // on change of the input field or when the page is loaded with cache check if a preview image can be loaded
+            $root.find('.btn-file input:file')
+                .on('change', renderPreview)
+                .each( renderPreview );
+
+            $root.find('.btn-file .remove').on('click', removePreview);
+
+            $root.find('.signout').on('click', clickSignOut);
+        });
+
+    })(window, jQuery);
+    </script>
+</body>
+</html>
