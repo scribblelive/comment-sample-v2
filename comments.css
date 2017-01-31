@@ -224,3 +224,6 @@ html, body {
 #scrbbl-comments.uploading .media .remove {
     display: none;
 }
+#scrbbl-comments.uploading .media {
+    cursor: default;
+}

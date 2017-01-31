@@ -70,7 +70,10 @@
                     .find(':input[type=submit]')
                     .prop('disabled', true);
 
-                $root.toggleClass('uploading', true);
+                $root
+                    .toggleClass('uploading', true)
+                    .find('.media input:file')
+                    .prop('disabled', true);
 
                 var fileList, avatar;
                 if( typeof (fileList = $root.find('.avatar input:file')[0].files) !== undefined && fileList.length === 1 ) {
@@ -116,7 +119,10 @@
                         .find(':input[type=submit]')
                         .prop('disabled', false);
 
-                    $root.toggleClass('uploading', false);
+                    $root
+                        .toggleClass('uploading', false)
+                        .find('.media input:file')
+                        .prop('disabled', true);
                 });
             });
 
