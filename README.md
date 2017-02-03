@@ -1,6 +1,6 @@
 ScribbleLive Comment Widget for APIv2
 ===========
-This widget allows users to submit comments to an event from either a stand alone webpage or in a Scribble UI that doesn't support commenting (e.g Pinboard, Timeline, etc.)
+This widget allows users to submit comments to an event from either a stand alone webpage or in a Scribble UI that doesn't support commenting (e.g Timeline, etc.)
 
 The html, css, and javascript code can be placed in any page or the top or bottom html of a Scribblelive whitelabel. In order to operate this widget you will need a Scribblelive API token and the id of an Event where the comments will be submitted to.
 
@@ -11,7 +11,7 @@ The html, css, and javascript code can be placed in any page or the top or botto
 ##Widget Requirements
 This widget requires JQuery to be defined on the page where it is being used and for a browser that supports HTML5. The image and avatar uploads require the HTML5 file upload functinality.
 
-To include JQuery and the commenting engine file please add the following to the head definition of your page or the top html of your event:
+To include JQuery and the commenting engine file, please add the following to the head definition of your page or the top html of your event:
 
 ```HTML
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -19,14 +19,14 @@ To include JQuery and the commenting engine file please add the following to the
 ```
 
 ##Widget Styling
-The css for the look and feel of the widget is included in the sample.html file. If you wish to change the look and feel of the widget please feel free to modify the styles. Please leave the assigned classes and ids as they are. Some of the Javascript relies on specific ids. You can freely add your own classes and include them in the class list for the element that you wish to modify. If you decide you need to change some of the ids or classes please make sure that they are passed properly to the comment engive via the javascript initialization below.
+The css for the look and feel of the sample widget is included in the comments.css file. If you wish to change the look and feel of the widget please feel free to modify the styles.
 
 ```HTML
  <link rel="stylesheet" type="text/css" href="comments.css">
 ```
 
 ##Widget Initialization
-To set up the widget on your page you will need to at a javascript call once the page is finished loading to initialize the widget. The parameters you specify must match the ids or classes you assign to various input fields and preview divs so that the widget can function properly. If you are using the widget unmodified then you will just need to specify the api token and thread id. A description of each parameter can be found below.
+To set up the widget on your page you will need to add a javascript call once jQuery finished loading to initialize the widget. The mandatory required parameters are your token and threadid. A description of each available mandatory and optional parameter can be found below.
 
 ```HTML
 <script type="text/javascript">
@@ -55,6 +55,7 @@ __v2_avatar_upload__
 Switch to utilize API v1 or API v2 avatar upload (true|false) _default:_ true
 
 ##Widget functions
+A list of methods that become available after the widget was initialized
 
 ####comment.anon_login([force_auth, ] user_name [, user_avatar])
 
@@ -103,4 +104,4 @@ Switch to utilize API v1 or API v2 avatar upload (true|false) _default:_ true
 &nbsp;&nbsp;&nbsp;Accepted Filetypes:  
 &nbsp;&nbsp;&nbsp;audio/mp3
 
-&nbsp;&nbsp;&nbsp;Note: submitted audio only shows in the queue of the Standard interface
+&nbsp;&nbsp;&nbsp;Note: submitted audio only shows in the queue of the standard interface
