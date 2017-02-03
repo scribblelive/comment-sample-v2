@@ -7,59 +7,173 @@ Description: This script allows users to leave comments on any page that using t
 
 var commentEngine = (function(window, $, undefined) {
 
+    $.extend({
+        ajax_progress: function( request ){
+            dfd = new $.Deferred();
+
+            request.xhr = function()
+            {
+                var xhr = $.ajaxSettings.xhr();
+                if(xhr instanceof window.XMLHttpRequest) {
+                    xhr.addEventListener('progress', this.progress, false);
+                }
+
+                if(xhr.upload) {
+                    xhr.upload.addEventListener('progress', this.progress, false);
+                }
+
+                return xhr;
+            }
+            request.progress = function( e ) {
+                if( e.loaded > 0 && e.total > 0) {
+                    dfd.notify.call(request.data, {'progress': e, 'data':request.data } );
+                }
+            }
+
+            $.ajax( request )
+            .done( function(data, textStatus, jqXHR)
+            {
+                dfd.resolve( data, textStatus, jqXHR );
+            })
+            .fail( function(jqXHR, textStatus, errorThrown)
+            {
+                dfd.reject( jqXHR, textStatus, errorThrown );
+            })
+
+            return dfd.promise();
+        }
+    })
+
+    function format()
+    {
+        var args = Array.prototype.slice.call(arguments),
+            formatted = args.shift();
+
+        for (var i = 0; i < args.length; i++) {
+            var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+            formatted = formatted.replace(regexp, args[i]);
+        }
+
+        // remove all leftover {0} ... {n}
+        formatted = formatted.replace(/\{[0-9]+\}/gi, '');
+        return formatted;
+    }
+
     function commentEngine( settings ) {
         var defaults = {
             'endpoint_v1': 'https://apiv1.scribblelive.com',
             'endpoint_v2': 'https://api.scribblelive.com/v1',
             'token': null,
             'threadId': null,
-            '_v2_avatar_upload': true
+            '_v2_avatar_upload': true,
+            'response': {
+                USER_AUTH_OK: {
+                    code: 100,
+                    type: 'success',
+                    message: "OK"
+                },
+                USER_AUTH_EXPIRED: {
+                    code: 101,
+                    type: 'error',
+                    message: "OK"
+                },
+                USER_AVATAR_OK: {
+                    code: 110,
+                    type: 'success',
+                    message: "OK"
+                },
+                USER_AVATAR_NOT_AN_IMAGE: {
+                    code: 111,
+                    type: 'error',
+                    message: "Avatar is not a valid Image"
+                },
+                USER_AVATAR_UPLOAD_FAILED: {
+                    code: 112,
+                    type: 'error',
+                    message: "Avatar upload failed"
+                },
+                USER_USERNAME_INVALID: {
+                    code: 121,
+                    type: 'error',
+                    message: "Username '{0}' is not valid"
+                },
+                STREAM_OK: {
+                    code: 200,
+                    type: 'success',
+                    message: "OK"
+                },
+                STREAM_UNKNOWN_STATUS: {
+                    code: 201,
+                    type: 'error',
+                    message: "Couldn't verify open status of stream"
+                },
+                STREAM_CLOSED: {
+                    code: 202,
+                    type: 'information',
+                    message: "Stream is closed"
+                },
+                POST_OK: {
+                    code: 300,
+                    type: 'success',
+                    message: "OK"
+                },
+                POST_INVALID_CONTENT: {
+                    CODE: 301,
+                    type: 'error',
+                    message: "Invalid content type"
+                },
+                POST_NO_CONTENT: {
+                    code: 302,
+                    type: 'error',
+                    message: "Contents needs to be text/html"
+                },
+                MEDIA_OK: {
+                    code: 400,
+                    type: 'success',
+                    message: "OK"
+                },
+                MEDIA_WRONG_TYPE: {
+                    code: 401,
+                    type: 'error',
+                    message: "Media needs to be an instance of the File object and the type must be '{0}'"
+                },
+                MEDIA_TOO_LARGE: {
+                    code: 402,
+                    type: 'error',
+                    message: "Media '{0}' exceeded the allowed upload size of {1} MB"
+                },
+                MEDIA_NOT_SUPPORTED: {
+                    code: 403,
+                    type: 'error',
+                    message: "Media '{0}' isn't supported"
+                },
+                UNKNOWN_ERROR: {
+                    code: 901,
+                    type: 'error',
+                    message: "Unknown Error"
+                }
+            }
         }
 
         this.settings = $.extend({}, defaults, settings );
+        this.limits = {
+            max_file_size_image: 100,
+            max_file_size_video: 250,
+            max_file_size_audio: 250,
+            max_file_size_unit: 1024 * 1024 // MB
+        }
         this.auth = null;
     }
 
     commentEngine.prototype = {
         _store_avatar: function( avatar_file ) {
             var dfd = $.Deferred(),
-                xhrUploadProgress = function()
-                {
-                    var myXhr = $.ajaxSettings.xhr();
-                    if(myXhr.upload) {
-                        myXhr.upload.addEventListener('progress', function( e )
-                        {
-                            dfd.notify( {
-                                            message: "Avatar Upload",
-                                            progresstype: 1,
-                                            value: Math.round(e.loaded * 100  / e.total)
-                                        });
-                        }, false);
-                    }
-                    return myXhr;
-                },
-                xhrNotifyUploadDone = function()
-                {
-                    dfd.notify({
-                        message: "Avatar Upload finished",
-                        progresstype: 1,
-                        value: 100
-                    });
-                },
-                xhrNotifyUploadFail = function()
-                {
-                    dfd.notify({
-                        message: "Avatar Upload failed",
-                        progresstype: 1,
-                        value: "Error"
-                    });
-                },
                 _self = this,
                 has_avatar = typeof avatar_file != 'undefined',
                 is_valid_avatar =  has_avatar && ( avatar_file instanceof File && !!avatar_file.type.match(/image/) );
 
             if( has_avatar && !is_valid_avatar ) {
-                dfd.reject( { code: 8 } , "error", new Error( 'Avatar is not a image file' ));
+                dfd.reject( _self.settings.response.USER_AVATAR_NOT_AN_IMAGE.code , _self.settings.response.USER_AVATAR_NOT_AN_IMAGE.type, new Error( _self.settings.response.USER_AVATAR_NOT_AN_IMAGE.message ));
             }
 
             if( dfd.state() === 'pending' ) {
@@ -80,25 +194,17 @@ var commentEngine = (function(window, $, undefined) {
                         },
                         _uploadImage = function( data )
                         {
-                            var uploadDFD = $.Deferred();
-                            $.ajax({
+                            return $.ajax_progress({
                                 url: data.uploadUrl,
                                 type: 'PUT',
                                 data: avatar_file,
                                 processData: false,
-                                contentType: avatar_file.type,
-                                xhr: xhrUploadProgress
+                                contentType: avatar_file.type
                             })
-                            .done( function() {
-                                xhrNotifyUploadDone();
-                                uploadDFD.resolve(data, "success", {});
+                            .then( function()
+                            {
+                                return data;
                             })
-                            .fail( function( jqXHR, textStatus, errorThrown ) {
-                                xhrNotifyUploadFail();
-                                uploadDFD.reject(jqXHR, textStatus, errorThrown);
-                            })
-
-                            return uploadDFD;
                         },
                         _getAvatarUrl = function( data )
                         {
@@ -115,14 +221,18 @@ var commentEngine = (function(window, $, undefined) {
 
                     _getUploadUrl()
                     .then( _uploadImage )
+                    .progress( dfd.notify.bind({type:'Avatar'}) )
                     .then( _getAvatarUrl )
                     .done( function( data )
                     {
-                        dfd.resolve({avatar_url: 'https://' + data.avatarUrl}, "success", {});
+                        dfd.resolve({avatar_url: 'https://' + data.avatarUrl}, _self.settings.response.USER_AVATAR_OK.type, {   code: _self.settings.response.USER_AVATAR_OK.code,
+                                                                                                                                type: _self.settings.response.USER_AVATAR_OK.type,
+                                                                                                                                message: _self.settings.response.USER_AVATAR_OK.message
+                                                                                                                            });
                     })
-                    .fail( function(jqXHR, textstatus, errorThrown)
+                    .fail( function()
                     {
-                        dfd.reject({ code: 8 }, "error", new Error( 'Avatar upload failed' ) );
+                        dfd.reject(_self.settings.response.USER_AVATAR_UPLOAD_FAILED.code , _self.settings.response.USER_AVATAR_UPLOAD_FAILED.type, new Error( _self.settings.response.USER_AVATAR_UPLOAD_FAILED.message ) );
                     });
                 }
                 else {
@@ -132,26 +242,27 @@ var commentEngine = (function(window, $, undefined) {
                             var avatarData = new FormData();
                                 avatarData.append('file', avatar_file);
 
-                            return $.ajax({
+                            return $.ajax_progress({
                                 url: _self.settings.endpoint_v1 + "/user/avatar/upload",
                                 type: 'POST',
                                 data: avatarData,
                                 processData: false,
                                 contentType: false,
-                                xhr: xhrUploadProgress
                             });
                         };
 
                     _uploadAvatar()
+                    .progress( dfd.notify.bind({type:'Avatar'}) )
                     .done( function( data )
                     {
-                        xhrNotifyUploadDone();
-                        dfd.resolve({avatar_url: data}, "success", {});
+                        dfd.resolve({avatar_url: data}, _self.settings.response.USER_AVATAR_OK.type,    {   code: _self.settings.response.USER_AVATAR_OK.code,
+                                                                                                            type: _self.settings.response.USER_AVATAR_OK.type,
+                                                                                                            message: _self.settings.response.USER_AVATAR_OK.message
+                                                                                                        });
                     })
-                    .fail( function(jqXHR, textstatus, errorThrown)
+                    .fail( function()
                     {
-                        xhrNotifyUploadFail();
-                        dfd.reject({ code: 8 }, "error", new Error( 'Avatar upload failed' ) );
+                        dfd.reject(_self.settings.response.USER_AVATAR_UPLOAD_FAILED.code , _self.settings.response.USER_AVATAR_UPLOAD_FAILED.type, new Error( _self.settings.response.USER_AVATAR_UPLOAD_FAILED.message ) );
                     });
                 }
             }
@@ -170,11 +281,14 @@ var commentEngine = (function(window, $, undefined) {
 
 
             if( !force_auth && _self.auth_valid() ) {
-                dfd.resolve( this.auth, "success", {});
+                dfd.resolve( this.auth, _self.settings.response.USER_AUTH_OK.type, {    code: _self.settings.response.USER_AUTH_OK.code,
+                                                                                        type: _self.settings.response.USER_AUTH_OK.type,
+                                                                                        message: _self.settings.response.USER_AUTH_OK.message
+                                                                                    });
             }
 
             if( typeof user_name !== 'string' || user_name === '' ){
-                dfd.reject( { code: 7 }, "error", new Error('Username "' + user_name + '" is not valid') );
+                dfd.reject( _self.settings.response.USER_USERNAME_INVALID.code , _self.settings.response.USER_USERNAME_INVALID.type, new Error( format( _self.settings.response.USER_USERNAME_INVALID.message ), user_name ) );
             }
 
             if( dfd.state() === 'pending' ) {
@@ -206,7 +320,7 @@ var commentEngine = (function(window, $, undefined) {
                     }
                     return $.ajax( request )
                 })
-                .progress( dfd.notify.bind(dfd) )
+                .progress( dfd.notify )
                 .done( function( data )
                 {
                     _self._set_auth('name', data.Name );
@@ -214,7 +328,10 @@ var commentEngine = (function(window, $, undefined) {
                     _self._set_auth('key', data.Auth );
                     _self._set_auth_update();
 
-                    dfd.resolve( this.auth, 'success', {} );
+                    dfd.resolve( this.auth, _self.settings.response.USER_AUTH_OK.type, {    code: _self.settings.response.USER_AUTH_OK.code,
+                                                                                            type: _self.settings.response.USER_AUTH_OK.type,
+                                                                                            message: _self.settings.response.USER_AUTH_OK.message
+                                                                                        });
                 })
                 .fail( function()
                 {
@@ -257,20 +374,23 @@ var commentEngine = (function(window, $, undefined) {
                 type: 'GET',
                 dataType: 'json'
             })
-            .always( function( data, textStatus) {
+            .always( function( data, textStatus ) {
                 if( textStatus === 'error' ) {
-                    dfd.reject( { code: 4 }, "error", new Error('Couldn\'t verify open status of stream' ) );
+                    dfd.reject( _self.settings.response.STREAM_UNKNOWN_STATUS.code , _self.settings.response.STREAM_UNKNOWN_STATUS.type, new Error( _self.settings.response.STREAM_UNKNOWN_STATUS.message ) );
                 }
                 else {
                     // check if stream is open and save the respecitve return value in solution
                     solution = ( data.IsLive === true )?
                         {
                             'fn': 'resolve',
-                            'arguments': [{}, 'success', 'stream is open']
+                            'arguments': [{}, _self.settings.response.STREAM_OK.type,   {   code: _self.settings.response.STREAM_OK.code,
+                                                                                            type: _self.settings.response.STREAM_OK.type,
+                                                                                            message: _self.settings.response.STREAM_OK.message
+                                                                                        }]
                         }:
                         {
                             'fn': 'reject',
-                            'arguments': [{code: 5}, 'information', 'warning: Stream is closed']
+                            'arguments': [_self.settings.response.STREAM_CLOSED.code , _self.settings.response.STREAM_CLOSED.type, _self.settings.response.STREAM_CLOSED.message ]
                         };
 
                     // resolve/reject based on solution the deferred object
@@ -285,8 +405,7 @@ var commentEngine = (function(window, $, undefined) {
             var _self = this;
 
             if( typeof data.content !== 'string' || data.content === '') {
-                console.warn('No content provided to post to the stream');
-                return ( $.Deferred().reject({ code: 6 }, 'error', new Error('no content [text] provided for posting' ) ) ).promise();
+                return ( $.Deferred().reject(_self.settings.response.POST_NO_CONTENT.code , _self.settings.response.POST_NO_CONTENT.type, new Error( _self.settings.response.POST_NO_CONTENT.message ) ) ).promise();
             }
 
             var requestData = {
@@ -314,7 +433,7 @@ var commentEngine = (function(window, $, undefined) {
                 data: JSON.stringify(requestData)
             }
 
-            return $.ajax( request ).done( _self._set_auth_update.bind(_self) );
+            return $.ajax_progress( request ).done( _self._set_auth_update.bind(_self) );
         },
         postImage: function( data )
         {
@@ -333,8 +452,11 @@ var commentEngine = (function(window, $, undefined) {
             }
             else {
                 // Reject the upload of an image if no image data is provided
-                console.warn('Media needs to be an instance of the File object and the type must contain image/*');
-                return ( $.Deferred().reject({ code: 6 }, 'error', new Error('no media [image] provided for upload' ) ) ).promise();
+                return ( $.Deferred().reject(_self.settings.response.MEDIA_WRONG_TYPE.code , _self.settings.response.MEDIA_WRONG_TYPE.type, new Error( format( _self.settings.response.MEDIA_WRONG_TYPE.message , 'image/*' ) ) ) ).promise();
+            }
+
+            if( data.file.size >= _self.limits.max_file_size_image * _self.limits.max_file_size_unit ) {
+                return ( $.Deferred().reject( _self.settings.response.MEDIA_TOO_LARGE.code, _self.settings.response.MEDIA_TOO_LARGE.type, new Error( format( _self.settings.response.MEDIA_TOO_LARGE.message, data.file.name, _self.limits.max_file_size_image ) ) ) ).promise();
             }
 
             // Delete processed properties of data
@@ -345,44 +467,16 @@ var commentEngine = (function(window, $, undefined) {
             var requestData = new FormData();
                 for(property in data) { requestData.append(property, data[property]); }
 
-            var imageUploadDfd = $.Deferred();
-
             var request = {
                 url: _self.settings.endpoint_v2 + '/comments/image?token=' + _self.settings.token + '&auth=' + _self.auth.key,
                 type: 'POST',
                 dataType: 'json',
                 data: requestData,
                 processData: false,
-                contentType: false,
-                xhr: function()
-                {
-                    var myXhr = $.ajaxSettings.xhr();
-                    if(myXhr.upload) {
-                        myXhr.upload.addEventListener('progress', function( e )
-                        {
-                            imageUploadDfd.notify( {
-                                            message: "Image Upload",
-                                            progresstype: 1,
-                                            value: Math.round(e.loaded * 100  / e.total)
-                                        });
-                        }, false);
-                    }
-                    return myXhr;
-                }
+                contentType: false
             }
 
-            $.ajax( request )
-                .done( _self._set_auth_update.bind(_self) )
-                .done( function(data, textStatus, jqXHR)
-                {
-                    imageUploadDfd.resolve( data, textStatus, jqXHR );
-                })
-                .fail( function(jqXHR, textStatus, errorThrown)
-                {
-                    imageUploadDfd.reject(jqXHR, textStatus, errorThrown);
-                })
-
-            return imageUploadDfd.promise();
+            return $.ajax_progress( request ).done( _self._set_auth_update.bind(_self) );
         },
         postVideo: function( data )
         {
@@ -398,8 +492,11 @@ var commentEngine = (function(window, $, undefined) {
 
             if( !(typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/video/)) ) {
                 // Reject the upload of an video if no video data is provided
-                console.warn('Media needs to be an instance of the File object and the type must be a supported video type');
-                return ( $.Deferred().reject({ code: 6 }, 'error', new Error('no media [video] provided for upload' ) ) ).promise();
+                return ( $.Deferred().reject(_self.settings.response.MEDIA_WRONG_TYPE.code , _self.settings.response.MEDIA_WRONG_TYPE.type, new Error( format( _self.settings.response.MEDIA_WRONG_TYPE.message , 'video/*' ) ) ) ).promise();
+            }
+
+            if( data.file.size >= _self.limits.max_file_size_video * _self.limits.max_file_size_unit ) {
+                return ( $.Deferred().reject( _self.settings.response.MEDIA_TOO_LARGE.code, _self.settings.response.MEDIA_TOO_LARGE.type, new Error( format( _self.settings.response.MEDIA_TOO_LARGE.message, data.file.name, _self.limits.max_file_size_video ) ) ) ).promise();
             }
 
             // Delete processed properties of data
@@ -408,7 +505,66 @@ var commentEngine = (function(window, $, undefined) {
             var requestData = new FormData();
                 for(property in data) { requestData.append(property, data[property]); }
 
-            var videoUploadDfd = $.Deferred();
+            var request = {
+                url: this.settings.endpoint_v1 + '/event/' + _self.settings.threadId + '?format=json',
+                type: 'POST',
+                dataType: 'json',
+                data: requestData,
+                processData: false,
+                contentType: false
+            }
+
+            return $.ajax_progress( request )
+            .then(function( data, textStatus, jqXHR )
+            {
+                data.message = 'Comment successfully enqueued, processing Video';
+                delete data.Message;
+                return data;
+            },
+            function(jqXHR, textstatus, errorThrown)
+            {
+                var error = [];
+                var uploadFailDFD = $.Deferred();
+                if( jqXHR.status === 404 ) {
+                    error = [_self.settings.response.MEDIA_TOO_LARGE.code, _self.settings.response.MEDIA_TOO_LARGE.type, new Error( format( _self.settings.response.MEDIA_TOO_LARGE.message, data.file.name, _self.limits.max_file_size_video ) )];
+                }
+                else if (jqXHR.status === 200 ) {
+                    error = [_self.settings.response.MEDIA_NOT_SUPPORTED.code , _self.settings.response.MEDIA_NOT_SUPPORTED.type, new Error( format( _self.settings.response.MEDIA_NOT_SUPPORTED.message, data.file.name ) )];
+                }
+                else {
+                    error = [_self.settings.response.UNKNOWN_ERROR.code , _self.settings.response.UNKNOWN_ERROR.type, new Error( _self.settings.response.UNKNOWN_ERROR.message )];
+                }
+                uploadFailDFD.rejectWith(this, error);
+                return uploadFailDFD.promise();
+            })
+            .done( _self._set_auth_update.bind(_self) );
+        },
+        postAudio: function( data )
+        {
+            var _self = this;
+
+            data['Token'] = _self.settings.token;
+            data['Auth'] = _self.auth.key;
+
+            // The caption is optional don't add it to the form data if no content is provided
+            if( typeof data.content === 'string' && data.content !== '') {
+                data['Content'] = data.content;
+            }
+
+            if( !(typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/audio/)) ) {
+                // Reject the upload of an video if no video data is provided
+                return ( $.Deferred().reject(_self.settings.response.MEDIA_WRONG_TYPE.code , _self.settings.response.MEDIA_WRONG_TYPE.type, new Error( format( _self.settings.response.MEDIA_WRONG_TYPE.message , 'audio/*' ) ) ) ).promise();
+            }
+
+            if( data.file.size >= _self.limits.max_file_size_audio * _self.limits.max_file_size_unit ) {
+                return ( $.Deferred().reject( _self.settings.response.MEDIA_TOO_LARGE.code, _self.settings.response.MEDIA_TOO_LARGE.type, new Error( format( _self.settings.response.MEDIA_TOO_LARGE.message, data.file.name, _self.limits.max_file_size_audio ) ) ) ).promise();
+            }
+
+            // Delete processed properties of data
+            delete data.content;
+
+            var requestData = new FormData();
+                for(property in data) { requestData.append(property, data[property]); }
 
             var request = {
                 url: this.settings.endpoint_v1 + '/event/' + _self.settings.threadId + '?format=json',
@@ -416,41 +572,17 @@ var commentEngine = (function(window, $, undefined) {
                 dataType: 'json',
                 data: requestData,
                 processData: false,
-                contentType: false,
-                xhr: function()
-                {
-                    var myXhr = $.ajaxSettings.xhr();
-                    if(myXhr.upload) {
-                        myXhr.upload.addEventListener('progress', function( e )
-                        {
-                            videoUploadDfd.notify( {
-                                            message: "Video Upload",
-                                            progresstype: 1,
-                                            value: Math.round(e.loaded * 100  / e.total)
-                                        });
-                        }, false);
-                    }
-                    return myXhr;
-                }
+                contentType: false
             }
 
-            $.ajax( request ).then(function( data ) {
-                data.message = 'Comment successfully enqueued, processing Video';
+            return $.ajax_progress( request )
+            .then(function( data )
+            {
+                data.message = 'Comment successfully enqueued, processing Audio';
                 delete data.Message;
-
                 return data;
             })
-            .done( _self._set_auth_update.bind(_self) )
-            .done( function(data, textStatus, jqXHR)
-            {
-                videoUploadDfd.resolve( data, textStatus, jqXHR );
-            })
-            .fail( function(jqXHR, textStatus, errorThrown)
-            {
-                videoUploadDfd.reject(jqXHR, textStatus, errorThrown);
-            });
-
-            return videoUploadDfd.promise();
+            .done( _self._set_auth_update.bind(_self) );
         },
         post: function( data )
         {
@@ -464,30 +596,31 @@ var commentEngine = (function(window, $, undefined) {
                 },
                 image = typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/image/),
                 video = typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/video/),
-                text = typeof data.content === 'string' && data.content !== '';
+                audio = typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/audio/),
+                text = typeof data.content === 'string' && data.content !== '',
+                fn = _self.postText;
 
             if( !_self.auth_valid() ) {
-                dfd.reject({ code: 1 }, "error", new Error('Authentication is not valid or has expired') );
+                dfd.reject(_self.settings.response.USER_AUTH_EXPIRED.code , _self.settings.response.USER_AUTH_EXPIRED.type, new Error( _self.settings.response.USER_AUTH_EXPIRED.message ) );
             }
 
             if( typeof data.content !== 'string' ) {
-                dfd.reject({ code: 2 }, "error", new Error('Content "' + data.content + '" is not valid string') );
+                dfd.reject(_self.settings.response.POST_INVALID_CONTENT.code , _self.settings.response.POST_INVALID_CONTENT.type, new Error( _self.settings.response.POST_INVALID_CONTENT.message ) );
             }
 
             if( !data.file && data.content === '' ) {
-                dfd.reject({ code: 3 }, "error", new Error('No content provided to send to the API' ) );
+                dfd.reject(_self.settings.response.POST_NO_CONTENT.code , _self.settings.response.POST_NO_CONTENT.type, new Error( _self.settings.response.POST_NO_CONTENT.message ) );
             }
 
             dfd.state() !== 'rejected' && _self.isOpen().done( function() {
-                if( image ) {
-                    _self.postImage( data ).progress( dfd.notify.bind(dfd) ).done( done ).fail( fail );
-                }
-                else if( video ) {
-                    _self.postVideo( data ).progress( dfd.notify.bind(dfd) ).done( done ).fail( fail );
-                }
-                else if( text ) {
-                    _self.postText( data ).done( done ).fail( fail );
-                }
+
+                // check if an alternative content upload method is needed
+                (image && (fn = _self.postImage)) ||
+                (video && (fn = _self.postVideo)) ||
+                (audio && (fn = _self.postAudio))
+
+                // execute the selected upload method
+                fn.call( _self, data ).progress( dfd.notify.bind({type:'Content'}) ).done( done ).fail( fail );
             })
             .fail( fail );
 

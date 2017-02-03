@@ -25,7 +25,7 @@
                 <div class="content container">
                     <span class="media btn btn-file">
                         <div class="preview"></div>
-                        <input type="file" accept="image/*, video/*" />
+                        <input type="file" accept="image/*, video/*, audio/*" />
                         <div class="remove"><span title="Remove Media">Remove Media</span></div>
                     </span>
                     <textarea id="caption" placeholder="Please enter your comment/caption here."></textarea>
@@ -100,8 +100,8 @@
 
                     return comment.post( post )
                 })
-                .progress( function( progress ) {
-                    $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', false).text( progress.message + ': ' + progress.value + ' %' );
+                .progress( function( p ) {
+                    $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', false).text( 'Uploading ' + this.type + ': ' + Math.round(p.progress.loaded * 100  / p.progress.total) + ' %' );
                 })
                 .done( function( data ) {
                     $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', true).text( data.message );
