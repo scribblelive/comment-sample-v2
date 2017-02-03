@@ -66,11 +66,11 @@ Switch to utilize API v1 or API v2 avatar upload (true|false) _default:_ true
 
 ####comment.post(data)
 
-&nbsp;&nbsp;&nbsp;__data__: {content: 'string', [file: FileObject]}
+&nbsp;&nbsp;&nbsp;__data__: {content: 'string', [file: FileObject]}  
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
-&nbsp;&nbsp;&nbsp;If the *content* is passed in the File becomes optional (pure text post)
-&nbsp;&nbsp;&nbsp;If a *file* is passed the function will determine if it is a video or image (media post without caption)
+&nbsp;&nbsp;&nbsp;If the *content* is passed in the File becomes optional (pure text post)  
+&nbsp;&nbsp;&nbsp;If a *file* is passed the function will determine if it is a video or image (media post without caption)  
 &nbsp;&nbsp;&nbsp;If *content* and *file* the function will determine if it is a video or image and use the passed string as caption (media post with caption)
 
 ####comment.postText(data)
@@ -81,26 +81,26 @@ Switch to utilize API v1 or API v2 avatar upload (true|false) _default:_ true
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
-&nbsp;&nbsp;&nbsp;Accepted Filetypes:
-&nbsp;&nbsp;&nbsp;image/png
-&nbsp;&nbsp;&nbsp;image/gif
-&nbsp;&nbsp;&nbsp;image/jpeg
+&nbsp;&nbsp;&nbsp;Accepted Filetypes:  
+&nbsp;&nbsp;&nbsp;image/png  
+&nbsp;&nbsp;&nbsp;image/gif  
+&nbsp;&nbsp;&nbsp;image/jpeg  
 
 ####comment.postVideo(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
-&nbsp;&nbsp;&nbsp;Accepted Filetypes:
-&nbsp;&nbsp;&nbsp;video/mp4
-&nbsp;&nbsp;&nbsp;video/flv
-&nbsp;&nbsp;&nbsp;video/mov
-&nbsp;&nbsp;&nbsp;video/avi
+&nbsp;&nbsp;&nbsp;Accepted Filetypes:  
+&nbsp;&nbsp;&nbsp;video/mp4  
+&nbsp;&nbsp;&nbsp;video/flv  
+&nbsp;&nbsp;&nbsp;video/mov  
+&nbsp;&nbsp;&nbsp;video/avi  
 
 ####comment.postAudio(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
-&nbsp;&nbsp;&nbsp;Accepted Filetypes:
+&nbsp;&nbsp;&nbsp;Accepted Filetypes:  
 &nbsp;&nbsp;&nbsp;audio/mp3
 
 &nbsp;&nbsp;&nbsp;Note: submitted audio only shows in the queue of the Standard interface
