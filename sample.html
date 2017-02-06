@@ -53,6 +53,7 @@
                 return;
             }
 
+            // create instance of comment engine for later use
             var comment = new commentEngine({
                 token: 'YOURTOKEN',
                 threadId: 'YOURTHREADID'
@@ -62,31 +63,27 @@
             {
                 e.preventDefault();
 
-                var $submit_btn = $(this).find('.save');
-
-                //disable submit button
-                $submit_btn
-                    .toggleClass('disabled', true)
-                    .find(':input[type=submit]')
-                    .prop('disabled', true);
-
+                // hide / disable input fields while processing
                 $root
                     .toggleClass('uploading', true)
-                    .find('.media input:file')
+                    .find('.avatar input, .media input, .submit input')
                     .prop('disabled', true);
-
-                var fileList, avatar;
-                if( typeof (fileList = $root.find('.avatar input:file')[0].files) !== undefined && fileList.length === 1 ) {
-                    avatar = fileList[0];
-                }
 
                 comment.isOpen()
                 .then( function()
                 {
-                    return comment.anon_login( $root.find('.username').val(), avatar ).done( showSignout );
+                    var fileList, avatar;
+                    // check if user selected an avatar
+                    if( typeof (fileList = $root.find('.avatar input:file')[0].files) !== undefined && fileList.length === 1 ) {
+                        avatar = fileList[0];
+                    }
+                    // when stream is open create anon user (user is stored for up to 2 hours or until reload of the page)
+                    return comment.anon_login( $root.find('.username').val(), avatar )
+                            .done( showSignout );
                 })
                 .then( function()
                 {
+                    // on successful authentication of the user gather information for the post
                     var post = { content: '' },
                         c, f;
 
@@ -98,49 +95,53 @@
                         post['file'] = f[0];
                     }
 
+                    // return promise of the post processing
                     return comment.post( post )
                 })
                 .progress( function( p ) {
+                    // progress handler is triggered by upload notification of user avatar and file upload for post content
                     $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', false).text( 'Uploading ' + this.type + ': ' + Math.round(p.progress.loaded * 100  / p.progress.total) + ' %' );
                 })
                 .done( function( data ) {
                     $root.find( '.scrbbl-message' ).toggleClass('error', false).toggleClass('success', true).text( data.message );
-                    clearContent();
+
+                    // Remove media and caption when the post was successfully submitted
+                    $root.find('.media.btn-file .remove').each( removePreview );
+                    $root.find('#caption').val('');
                 })
                 .fail( function( jqXHR, textStatus, errorThrown ) {
                     $root.find( '.scrbbl-message' ).toggleClass('error', true).toggleClass('success', false).text( errorThrown.toString() );
-
                 })
                 .always( function()
                 {
-                    // enable submit button again
-                    $submit_btn
-                        .toggleClass('disabled', false)
-                        .find(':input[type=submit]')
-                        .prop('disabled', false);
-
+                    // re-enable the submit and file selection buttons again
                     $root
                         .toggleClass('uploading', false)
-                        .find('.media input:file')
+                        .find('.avatar input, .media input, .submit input')
                         .prop('disabled', false);
                 });
             });
 
+
             var renderPreview = function()
             {
+                    // filter for the most viable preview type
                     var $this = $(this),
                         $parent = $this.parents('.btn-file'),
-                        preview = $parent.find('.preview');
-
+                        preview = $parent.find('.preview'),
+                        fn = filenamePreview;
 
                     if( preview.length && typeof (f = $this.get(0).files) !== undefined && f.length === 1 ) {
-
                         if( !!f[0].type.match(/image/) ) {
-                            imagePreview(preview, f[0]).done( function() { $parent.addClass('selected'); });
+                            fn = imagePreview;
                         }
-                        else if ( !!f[0].type.match(/video/) ) {
-                            videoPreview(preview, f[0]).done( function() { $parent.addClass('selected'); });
+                        else if ( !!f[0].type.match(/video(?!\/x-flv)/) ) {
+                            fn = videoPreview;
                         }
+                        else if ( !!f[0].type.match(/audio/) ) {
+                            fn = audioPreview;
+                        }
+                        fn.call(null, preview, f[0]).done( function() { $parent.addClass('selected'); });
                     }
                 },
                 imagePreview = function( $container, file )
@@ -156,15 +157,33 @@
                 },
                 videoPreview = function( $container, file )
                 {
-                    var dfd = $.Deferred(),
-                        fileUrl = URL.createObjectURL(file),
-                        video = $("<video controls autoplay>");
+                    var fileUrl = URL.createObjectURL(file),
+                        video = $("<video controls>");
 
                     video.append( $('<source>').attr('src', fileUrl).attr('type', file.type) );
                     video.appendTo( $container );
 
-                    dfd.resolve();
-                    return dfd;
+                    // return resolved promise for the additional handling in the renderPreview
+                    return ( $.Deferred().resolve() ).promise();
+                },
+                audioPreview = function( $container, file )
+                {
+                    var fileUrl = URL.createObjectURL(file),
+                        audio = $("<audio controls>");
+
+                    audio.append( $('<source>').attr('src', fileUrl).attr('type', file.type) );
+                    audio.appendTo( $container );
+
+                    return ( $.Deferred().resolve() ).promise();
+                },
+                filenamePreview = function( $container, file ) {
+                    var type = file.type || 'Unknown File Type',
+                        name = file.name;
+
+                    $('<div>').text( type ).appendTo( $container );
+                    $('<div>').text( name ).appendTo( $container );
+
+                    return ( $.Deferred().resolve() ).promise();
                 },
                 removePreview = function()
                 {
@@ -177,32 +196,31 @@
                         file.val('');
                         $parent.removeClass('selected');
                 },
-                clearContent = function()
-                {
-                    $root.find('.media.btn-file .remove').each( removePreview );
-                    $root.find('#caption').val('');
-                },
                 showSignout = function()
                 {
-                    $root.find('.user.container').toggleClass('signed-in', true);
-                },
-                clickSignOut = function( e )
-                {
-                    e.preventDefault();
-                    $root.find('.user.container').toggleClass('signed-in', false);
-                    $root.find('.avatar.btn-file .remove').each( removePreview );
-                    $root.find('.username').val('');
-                    comment.clear_auth();
-                }
+                    $root.toggleClass('signed-in', true);
+                };
 
-            // on change of the input field or when the page is loaded with cache check if a preview image can be loaded
             $root.find('.btn-file input:file')
+                // when new file is selected change is triggered
                 .on('change', renderPreview)
+                // when page is reloaded with caching files are still cached in the input:file objects
                 .each( renderPreview );
 
             $root.find('.btn-file .remove').on('click', removePreview);
 
-            $root.find('.signout').on('click', clickSignOut);
+            $root.find('.signout').on('click', function( e )
+            {
+                // on click of the signout button
+                e.preventDefault();
+                $root.toggleClass('signed-in', true);
+                // remove avatar file
+                $root.find('.avatar.btn-file .remove').each( removePreview );
+                // empty username
+                $root.find('.username').val('');
+                // clear the currently stored authentication
+                comment.clear_auth();
+            });
         });
 
     })(window, jQuery);

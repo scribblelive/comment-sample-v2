@@ -206,24 +206,30 @@ html, body {
     color: #ced1d5;
     margin-left: 1rem;
 }
-#scrbbl-comments .user.signed-in .signout {
+
+#scrbbl-comments.signed-in .signout {
     display: inline;
 }
-#scrbbl-comments .user.signed-in .remove,
-#scrbbl-comments .user.signed-in input[type="file"] {
+#scrbbl-comments.signed-in .user .remove,
+#scrbbl-comments.signed-in .user input[type="file"] {
     display: none;
 
 }
-#scrbbl-comments .user.signed-in .btn {
+#scrbbl-comments.signed-in .user .btn {
     cursor: default;
 }
-#scrbbl-comments .save.disabled {
+#scrbbl-comments.uploading .save {
     background-color: #CCC;
     border-color: #CCD;
 }
-#scrbbl-comments.uploading .media .remove {
+#scrbbl-comments.uploading .media .remove,
+#scrbbl-comments.uploading .media input[type="file"],
+#scrbbl-comments.uploading .user .remove,
+#scrbbl-comments.uploading .user input[type="file"] {
     display: none;
 }
-#scrbbl-comments.uploading .media {
+#scrbbl-comments.uploading .media,
+#scrbbl-comments.uploading .user,
+#scrbbl-comments.uploading .save {
     cursor: default;
 }
