@@ -55,17 +55,18 @@ __v2_avatar_upload__
 Switch to utilize API v1 or API v2 avatar upload (true|false) _default:_ true
 
 ##Widget functions
-A list of methods that become available after the widget was initialized
+A list of methods that become available after the widget was initialized  
+__Note:__ All Promises are jQuery promises.
 
-####comment.anon_login([force_auth, ] user_name [, user_avatar])
+#### *Promise* comment.anon_login([force_auth, ] user_name [, user_avatar])
 
-####comment.auth_valid()
+#### *Boolean* comment.auth_valid()
 
-####comment.clear_auth()
+#### *NULL* comment.clear_auth()
 
-####comment.isOpen()
+#### *Promise* comment.isOpen()
 
-####comment.post(data)
+#### *Promise* comment.post(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {content: 'string', [file: FileObject]}  
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
@@ -74,11 +75,15 @@ A list of methods that become available after the widget was initialized
 &nbsp;&nbsp;&nbsp;If a *file* is passed the function will determine if it is a video or image (media post without caption)  
 &nbsp;&nbsp;&nbsp;If *content* and *file* the function will determine if it is a video or image and use the passed string as caption (media post with caption)
 
-####comment.postText(data)
+&nbsp;&nbsp;&nbsp;triggers upload progress notication via *.progress( fn )*  
 
-&nbsp;&nbsp;&nbsp;__data__: {content: 'string'}
+#### *Promise* comment.postText(data)
 
-####comment.postImage(data)
+&nbsp;&nbsp;&nbsp;__data__: {content: 'string'} 
+
+&nbsp;&nbsp;&nbsp;triggers upload progress notication via *.progress( fn )*  
+
+#### *Promise* comment.postImage(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
@@ -87,7 +92,9 @@ A list of methods that become available after the widget was initialized
 &nbsp;&nbsp;&nbsp;image/gif  
 &nbsp;&nbsp;&nbsp;image/jpeg  
 
-####comment.postVideo(data)
+&nbsp;&nbsp;&nbsp;triggers upload progress notication via *.progress( fn )*  
+
+#### *Promise* comment.postVideo(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
@@ -97,11 +104,15 @@ A list of methods that become available after the widget was initialized
 &nbsp;&nbsp;&nbsp;video/mov  
 &nbsp;&nbsp;&nbsp;video/avi  
 
-####comment.postAudio(data)
+&nbsp;&nbsp;&nbsp;triggers upload progress notication via *.progress( fn )*  
+
+#### *Promise* comment.postAudio(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 
 &nbsp;&nbsp;&nbsp;Accepted Filetypes:  
 &nbsp;&nbsp;&nbsp;audio/mp3
 
-&nbsp;&nbsp;&nbsp;Note: submitted audio only shows in the queue of the standard interface
+&nbsp;&nbsp;&nbsp;__Note:__ submitted audio only shows in the queue of the standard interface
+
+&nbsp;&nbsp;&nbsp;triggers upload progress notication via *.progress( fn )*  
