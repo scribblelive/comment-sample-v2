@@ -95,6 +95,9 @@
                         post['file'] = f[0];
                     }
 
+                    post['location'] = {"lat":43.6414378,"long":-79.3915419}
+                    post['postmeta'] = {"additional_meta":"Important meta data for a comment"}
+
                     // return promise of the post processing
                     return comment.post( post )
                 })

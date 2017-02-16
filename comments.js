@@ -105,7 +105,7 @@ var commentEngine = (function(window, $, undefined) {
                 STREAM_UNKNOWN_STATUS: {
                     code: 201,
                     type: 'error',
-                    message: "Couldn't verify open status of stream"
+                    message: "Couldn't verify status of stream"
                 },
                 STREAM_CLOSED: {
                     code: 202,
@@ -413,17 +413,16 @@ var commentEngine = (function(window, $, undefined) {
                 'Content': data.content
             }
 
-            // if( $.isPlainObject( data.location ) && ( data.location.lat && data.location.long ) ) {
-            //     requestData['Location'] = {
-            //         'Lat': data.location.lat,
-            //         'Long': data.location.long,
-            //         'SRID': 4326
-            //     }
-            // }
+            if( $.isPlainObject( data.location ) && ( data.location.lat && data.location.long ) ) {
+                requestData['Location'] = {
+                    'Lat': data.location.lat,
+                    'Long': data.location.long
+                }
+            }
 
-            // if( $.isPlainObject( data.postmeta ) ) {
-            //     requestData['PostMeta'] = data.postmeta;
-            // }
+            if( $.isPlainObject( data.postmeta ) ) {
+                requestData['PostMeta'] = data.postmeta;
+            }
 
             var request = {
                 url: _self.settings.endpoint_v2 + '/comments?token=' + _self.settings.token + '&auth=' + _self.auth.key,
@@ -455,6 +454,18 @@ var commentEngine = (function(window, $, undefined) {
                 return ( $.Deferred().reject(_self.settings.response.MEDIA_WRONG_TYPE.code , _self.settings.response.MEDIA_WRONG_TYPE.type, new Error( format( _self.settings.response.MEDIA_WRONG_TYPE.message , 'image/*' ) ) ) ).promise();
             }
 
+            if( $.isPlainObject( data.location ) && ( data.location.lat && data.location.long ) ) {
+                data['Location'] = JSON.stringify({
+                    'Lat': data.location.lat,
+                    'Long': data.location.long
+                })
+            }
+
+            if( $.isPlainObject( data.postmeta ) ) {
+                data['PostMeta'] = JSON.stringify(data.postmeta);
+            }
+
+            // check before send if the file exceeds the file upload limit
             if( data.file.size >= _self.limits.max_file_size_image * _self.limits.max_file_size_unit ) {
                 return ( $.Deferred().reject( _self.settings.response.MEDIA_TOO_LARGE.code, _self.settings.response.MEDIA_TOO_LARGE.type, new Error( format( _self.settings.response.MEDIA_TOO_LARGE.message, data.file.name, _self.limits.max_file_size_image ) ) ) ).promise();
             }
@@ -463,6 +474,7 @@ var commentEngine = (function(window, $, undefined) {
             delete data.content;
             delete data.file;
             delete data.location;
+            delete data.postmeta;
 
             var requestData = new FormData();
                 for(property in data) { requestData.append(property, data[property]); }
