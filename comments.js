@@ -279,8 +279,8 @@ var commentEngine = (function(window, $, undefined) {
                 has_avatar = typeof args[1] != 'undefined',
                 is_valid_avatar =  has_avatar && ( args[1] instanceof File && !!args[1].type.match(/image/) )
 
-
             if( !force_auth && _self.auth_valid() ) {
+
                 dfd.resolve( this.auth, _self.settings.response.USER_AUTH_OK.type, {    code: _self.settings.response.USER_AUTH_OK.code,
                                                                                         type: _self.settings.response.USER_AUTH_OK.type,
                                                                                         message: _self.settings.response.USER_AUTH_OK.message
@@ -323,12 +323,18 @@ var commentEngine = (function(window, $, undefined) {
                 .progress( dfd.notify )
                 .done( function( data )
                 {
+
                     _self._set_auth('name', data.Name );
                     _self._set_auth('avatar', data.Avatar );
                     _self._set_auth('key', data.Auth );
                     _self._set_auth_update();
 
-                    dfd.resolve( this.auth, _self.settings.response.USER_AUTH_OK.type, {    code: _self.settings.response.USER_AUTH_OK.code,
+
+                    dfd.resolve( {  'name': data.Name,
+                                    'avatar': data.Avatar,
+                                    'key': data.Auth,
+                                    'update': new Date()
+                                }, _self.settings.response.USER_AUTH_OK.type, {   code: _self.settings.response.USER_AUTH_OK.code,
                                                                                             type: _self.settings.response.USER_AUTH_OK.type,
                                                                                             message: _self.settings.response.USER_AUTH_OK.message
                                                                                         });
