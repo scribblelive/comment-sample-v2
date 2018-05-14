@@ -104,7 +104,7 @@ __Note:__ All Promises are jQuery promises.
 
 &nbsp;&nbsp;&nbsp;triggers upload progress notification via *.progress( fn )*  
 
-#### *Promise* comment.postAudio(data)
+#### __(deprecated)__ *Promise* comment.postAudio(data)
 
 &nbsp;&nbsp;&nbsp;__data__: {[content: 'string'], file: FileObject}
 

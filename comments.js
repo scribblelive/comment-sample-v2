@@ -163,6 +163,7 @@ var commentEngine = (function(window, $, undefined) {
             max_file_size_unit: 1024 * 1024 // MB
         }
         this.auth = null;
+        this.isOpenCache = { time: null, value: null };
     }
 
     commentEngine.prototype = {
@@ -373,36 +374,48 @@ var commentEngine = (function(window, $, undefined) {
         isOpen: function()
         {
             var dfd = $.Deferred()
-                _self = this;
-
-            $.ajax({
-                url: _self.settings.endpoint_v2 + '/stream/' + _self.settings.threadId + '/status?token=' + _self.settings.token,
-                type: 'GET',
-                dataType: 'json'
-            })
-            .always( function( data, textStatus ) {
-                if( textStatus === 'error' ) {
-                    dfd.reject( _self.settings.response.STREAM_UNKNOWN_STATUS.code , _self.settings.response.STREAM_UNKNOWN_STATUS.type, new Error( _self.settings.response.STREAM_UNKNOWN_STATUS.message ) );
+                _self = this,
+                openResponse = {
+                    'fn': 'resolve',
+                    'arguments': [{}, _self.settings.response.STREAM_OK.type,   {   code: _self.settings.response.STREAM_OK.code,
+                                                                                    type: _self.settings.response.STREAM_OK.type,
+                                                                                    message: _self.settings.response.STREAM_OK.message
+                                                                                }]
+                },
+                closedResponse = {
+                    'fn': 'reject',
+                    'arguments': [_self.settings.response.STREAM_CLOSED.code , _self.settings.response.STREAM_CLOSED.type, _self.settings.response.STREAM_CLOSED.message ]
                 }
-                else {
-                    // check if stream is open and save the respecitve return value in solution
-                    solution = ( data.IsLive === true )?
-                        {
-                            'fn': 'resolve',
-                            'arguments': [{}, _self.settings.response.STREAM_OK.type,   {   code: _self.settings.response.STREAM_OK.code,
-                                                                                            type: _self.settings.response.STREAM_OK.type,
-                                                                                            message: _self.settings.response.STREAM_OK.message
-                                                                                        }]
-                        }:
-                        {
-                            'fn': 'reject',
-                            'arguments': [_self.settings.response.STREAM_CLOSED.code , _self.settings.response.STREAM_CLOSED.type, _self.settings.response.STREAM_CLOSED.message ]
-                        };
+                cacheExpired = (new Date() - _self.isOpenCache.time) - 5000 > 0;
 
-                    // resolve/reject based on solution the deferred object
-                    dfd[solution.fn].apply(dfd, solution.arguments);
-                }
-            });
+            if( !cacheExpired ) {
+                solution = _self.isOpenCache.value ? openResponse:closedResponse;
+                // resolve/reject based on solution the deferred object
+                dfd[solution.fn].apply(dfd, solution.arguments);
+            } else {             
+                $.ajax({
+                    url: _self.settings.endpoint_v2 + '/stream/' + _self.settings.threadId + '/status?token=' + _self.settings.token,
+                    type: 'GET',
+                    dataType: 'json'
+                })
+                .always( function( data, textStatus ) {
+                    if( textStatus === 'error' ) {
+                        dfd.reject( _self.settings.response.STREAM_UNKNOWN_STATUS.code , _self.settings.response.STREAM_UNKNOWN_STATUS.type, new Error( _self.settings.response.STREAM_UNKNOWN_STATUS.message ) );
+                    }
+                    else {
+                        _self.isOpenCache = {
+                            time: new Date(),
+                            value: data.IsLive
+                        }
+
+                        // check if stream is open and save the respecitve return value in solution
+                        solution = ( data.IsLive )? openResponse:closedResponse;
+
+                        // resolve/reject based on solution the deferred object
+                        dfd[solution.fn].apply(dfd, solution.arguments);
+                    }
+                });
+            }           
 
             return dfd.promise();
         },
@@ -570,7 +583,7 @@ var commentEngine = (function(window, $, undefined) {
             }
 
             if( !(typeof data.file === 'object' && data.file instanceof File && !!data.file.type.match(/audio/)) ) {
-                // Reject the upload of an video if no video data is provided
+                // Reject the upload of audio if no audio file data is provided
                 return ( $.Deferred().reject(_self.settings.response.MEDIA_WRONG_TYPE.code , _self.settings.response.MEDIA_WRONG_TYPE.type, new Error( format( _self.settings.response.MEDIA_WRONG_TYPE.message , 'audio/*' ) ) ) ).promise();
             }
 
@@ -622,7 +635,7 @@ var commentEngine = (function(window, $, undefined) {
                 dfd.reject(_self.settings.response.USER_AUTH_EXPIRED.code , _self.settings.response.USER_AUTH_EXPIRED.type, new Error( _self.settings.response.USER_AUTH_EXPIRED.message ) );
             }
 
-            if( typeof data.content !== 'string' ) {
+            if( typeof data.content !== 'string' || audio ) {
                 dfd.reject(_self.settings.response.POST_INVALID_CONTENT.code , _self.settings.response.POST_INVALID_CONTENT.type, new Error( _self.settings.response.POST_INVALID_CONTENT.message ) );
             }
 
@@ -634,8 +647,7 @@ var commentEngine = (function(window, $, undefined) {
 
                 // check if an alternative content upload method is needed
                 (image && (fn = _self.postImage)) ||
-                (video && (fn = _self.postVideo)) ||
-                (audio && (fn = _self.postAudio))
+                (video && (fn = _self.postVideo))
 
                 // execute the selected upload method
                 fn.call( _self, data ).progress( dfd.notify.bind({type:'Content'}) ).done( done ).fail( fail );
