@@ -5,6 +5,10 @@ Description: This script allows users to leave comments on any page that using t
 
 */
 
+if (typeof jQuery === 'undefined') {
+    throw new Error('commentEngine requires jQuery')
+}
+
 var commentEngine = (function(window, $, undefined) {
 
     $.extend({
